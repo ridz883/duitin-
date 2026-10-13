@@ -1,8 +1,10 @@
+
 import React, { createContext, useState, useEffect } from 'react';
 
 export const DuitinContext = createContext();
 
-const STORAGE_KEY = 'duitin_master_data_v3';
+// STORAGE_KEY v4 agar browser otomatis menyelaraskan struktur data baru
+const STORAGE_KEY = 'duitin_master_data_v4';
 
 const defaultData = {
   profile: {
@@ -64,7 +66,25 @@ export const DuitinProvider = ({ children }) => {
   const [data, setData] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : defaultData;
+      if (!saved) return defaultData;
+      const parsed = JSON.parse(saved);
+      
+      // Proteksi Deep-Merge: cegah crash jika ada properti yang null/undefined
+      return {
+        ...defaultData,
+        ...parsed,
+        profile: { ...defaultData.profile, ...(parsed.profile || {}) },
+        settings: { ...defaultData.settings, ...(parsed.settings || {}) },
+        accounts: Array.isArray(parsed.accounts) ? parsed.accounts : [],
+        transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+        budgets: Array.isArray(parsed.budgets) ? parsed.budgets : [],
+        goals: Array.isArray(parsed.goals) ? parsed.goals : [],
+        bills: Array.isArray(parsed.bills) ? parsed.bills : [],
+        debts: Array.isArray(parsed.debts) ? parsed.debts : [],
+        categories: parsed.categories && Array.isArray(parsed.categories.expense) && typeof parsed.categories.expense[0] === 'object'
+          ? parsed.categories 
+          : defaultData.categories
+      };
     } catch {
       return defaultData;
     }
@@ -95,11 +115,11 @@ export const DuitinProvider = ({ children }) => {
 
   const getBalances = () => {
     const balances = {};
-    data.accounts.forEach(acc => {
+    (data.accounts || []).forEach(acc => {
       balances[acc.id] = Number(acc.initialBalance || 0);
     });
 
-    data.transactions.forEach(tx => {
+    (data.transactions || []).forEach(tx => {
       const amt = Number(tx.amount || 0);
       if (tx.type === 'income' && balances[tx.accountId] !== undefined) {
         balances[tx.accountId] += amt;
@@ -114,7 +134,6 @@ export const DuitinProvider = ({ children }) => {
     return balances;
   };
 
-  // --- PROFIL AKUN ---
   const updateProfile = (profileData) => {
     setData(prev => ({
       ...prev,
@@ -123,7 +142,6 @@ export const DuitinProvider = ({ children }) => {
     showToast('Profil akun berhasil disimpan');
   };
 
-  // --- SENSOR SALDO ---
   const toggleHideBalance = () => {
     setData(prev => ({
       ...prev,
@@ -131,19 +149,17 @@ export const DuitinProvider = ({ children }) => {
     }));
   };
 
-  // --- TRANSAKSI ---
   const addTransaction = (tx) => {
     const newTx = { ...tx, id: 'tx_' + Date.now() };
-    setData(prev => ({ ...prev, transactions: [newTx, ...prev.transactions] }));
+    setData(prev => ({ ...prev, transactions: [newTx, ...(prev.transactions || [])] }));
     showToast('Transaksi berhasil dicatat');
   };
 
   const deleteTransaction = (id) => {
-    setData(prev => ({ ...prev, transactions: prev.transactions.filter(t => t.id !== id) }));
+    setData(prev => ({ ...prev, transactions: (prev.transactions || []).filter(t => t.id !== id) }));
     showToast('Transaksi dihapus');
   };
 
-  // --- CUSTOM KATEGORI ---
   const addCustomCategory = (type, category) => {
     const newCat = {
       id: 'cat_' + Date.now(),
@@ -154,7 +170,7 @@ export const DuitinProvider = ({ children }) => {
       ...prev,
       categories: {
         ...prev.categories,
-        [type]: [...prev.categories[type], newCat]
+        [type]: [...(prev.categories?.[type] || []), newCat]
       }
     }));
     showToast('Kategori baru berhasil ditambahkan');
@@ -165,70 +181,67 @@ export const DuitinProvider = ({ children }) => {
       ...prev,
       categories: {
         ...prev.categories,
-        [type]: prev.categories[type].filter(c => c.id !== categoryId)
+        [type]: (prev.categories?.[type] || []).filter(c => c.id !== categoryId)
       }
     }));
     showToast('Kategori dihapus');
   };
 
-  // --- DOMPET ---
   const addAccount = (acc) => {
     const newAcc = { ...acc, id: 'acc_' + Date.now() };
-    setData(prev => ({ ...prev, accounts: [...prev.accounts, newAcc] }));
+    setData(prev => ({ ...prev, accounts: [...(prev.accounts || []), newAcc] }));
     showToast('Dompet berhasil dibuat');
   };
 
   const deleteAccount = (id) => {
     setData(prev => ({
       ...prev,
-      accounts: prev.accounts.filter(a => a.id !== id),
-      transactions: prev.transactions.filter(t => t.accountId !== id && t.fromAccountId !== id && t.toAccountId !== id)
+      accounts: (prev.accounts || []).filter(a => a.id !== id),
+      transactions: (prev.transactions || []).filter(t => t.accountId !== id && t.fromAccountId !== id && t.toAccountId !== id)
     }));
     showToast('Dompet dihapus');
   };
 
-  // --- ANGGARAN & TARGET ---
   const addBudget = (budget) => {
-    setData(prev => ({ ...prev, budgets: [...prev.budgets, { ...budget, id: 'bg_' + Date.now() }] }));
+    setData(prev => ({ ...prev, budgets: [...(prev.budgets || []), { ...budget, id: 'bg_' + Date.now() }] }));
     showToast('Anggaran disimpan');
   };
 
   const deleteBudget = (id) => {
-    setData(prev => ({ ...prev, budgets: prev.budgets.filter(b => b.id !== id) }));
+    setData(prev => ({ ...prev, budgets: (prev.budgets || []).filter(b => b.id !== id) }));
     showToast('Anggaran dihapus');
   };
 
   const addGoal = (goal) => {
-    setData(prev => ({ ...prev, goals: [...prev.goals, { ...goal, id: 'gl_' + Date.now() }] }));
+    setData(prev => ({ ...prev, goals: [...(prev.goals || []), { ...goal, id: 'gl_' + Date.now() }] }));
     showToast('Target tabungan disimpan');
   };
 
   const deleteGoal = (id) => {
-    setData(prev => ({ ...prev, goals: prev.goals.filter(g => g.id !== id) }));
+    setData(prev => ({ ...prev, goals: (prev.goals || []).filter(g => g.id !== id) }));
     showToast('Target dihapus');
   };
 
   const updateGoalProgress = (id, amount) => {
     setData(prev => ({
       ...prev,
-      goals: prev.goals.map(g => g.id === id ? { ...g, currentAmount: g.currentAmount + Number(amount) } : g)
+      goals: (prev.goals || []).map(g => g.id === id ? { ...g, currentAmount: g.currentAmount + Number(amount) } : g)
     }));
     showToast('Tabungan bertambah');
   };
 
-  // --- TAGIHAN ---
   const addBill = (bill) => {
-    setData(prev => ({ ...prev, bills: [...prev.bills, { ...bill, id: 'bl_' + Date.now() }] }));
+    setData(prev => ({ ...prev, bills: [...(prev.bills || []), { ...bill, id: 'bl_' + Date.now() }] }));
     showToast('Tagihan ditambahkan');
   };
 
   const deleteBill = (id) => {
-    setData(prev => ({ ...prev, bills: prev.bills.filter(b => b.id !== id) }));
+    setData(prev => ({ ...prev, bills: (prev.bills || []).filter(b => b.id !== id) }));
     showToast('Tagihan dihapus');
   };
 
   const markBillPaid = (billId, accountId) => {
-    const bill = data.bills.find(b => b.id === billId);
+    const bill = (data.bills || []).find(b => b.id === billId);
     if (!bill) return;
 
     addTransaction({
@@ -236,31 +249,30 @@ export const DuitinProvider = ({ children }) => {
       amount: bill.amount,
       title: `Pembayaran ${bill.name}`,
       category: bill.category || 'Tagihan',
-      accountId: accountId || data.accounts[0]?.id,
+      accountId: accountId || data.accounts?.[0]?.id,
       date: new Date().toISOString().split('T')[0],
       note: 'Pelunasan tagihan'
     });
 
     setData(prev => ({
       ...prev,
-      bills: prev.bills.map(b => b.id === billId ? { ...b, isPaid: true } : b)
+      bills: (prev.bills || []).map(b => b.id === billId ? { ...b, isPaid: true } : b)
     }));
     showToast('Tagihan lunas');
   };
 
-  // --- UTANG & PIUTANG ---
   const addDebt = (debt) => {
-    setData(prev => ({ ...prev, debts: [...prev.debts, { ...debt, id: 'db_' + Date.now() }] }));
+    setData(prev => ({ ...prev, debts: [...(prev.debts || []), { ...debt, id: 'db_' + Date.now() }] }));
     showToast('Catatan tersimpan');
   };
 
   const deleteDebt = (id) => {
-    setData(prev => ({ ...prev, debts: prev.debts.filter(d => d.id !== id) }));
+    setData(prev => ({ ...prev, debts: (prev.debts || []).filter(d => d.id !== id) }));
     showToast('Catatan dihapus');
   };
 
   const payDebt = (debtId, payAmount, accountId) => {
-    const target = data.debts.find(d => d.id === debtId);
+    const target = (data.debts || []).find(d => d.id === debtId);
     if (!target) return;
     const amt = Number(payAmount);
 
@@ -288,7 +300,7 @@ export const DuitinProvider = ({ children }) => {
 
     setData(prev => ({
       ...prev,
-      debts: prev.debts.map(d => {
+      debts: (prev.debts || []).map(d => {
         if (d.id === debtId) {
           const nextRemaining = Math.max(0, d.remaining - amt);
           return { ...d, remaining: nextRemaining };
