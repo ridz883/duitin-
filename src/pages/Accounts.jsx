@@ -1,9 +1,9 @@
 import React, { useContext, useState } from 'react';
 import { DuitinContext, formatIDR } from '../context/DuitinContext';
-import { Wallet, Plus, CreditCard, Banknote } from 'lucide-react';
+import { Wallet, Plus, CreditCard, Banknote, Trash2 } from 'lucide-react';
 
 export default function Accounts() {
-  const { data, balances, addAccount } = useContext(DuitinContext);
+  const { data, balances, addAccount, deleteAccount } = useContext(DuitinContext);
   const [showAdd, setShowAdd] = useState(false);
   const [newAcc, setNewAcc] = useState({ name: '', type: 'cash', initialBalance: '' });
 
@@ -72,27 +72,47 @@ export default function Accounts() {
         </form>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {data.accounts.map(acc => {
-          const currentBal = balances[acc.id] || 0;
-          return (
-            <div key={acc.id} className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm relative overflow-hidden">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 rounded-xl">
-                  {acc.type === 'bank' ? <CreditCard size={20} /> : acc.type === 'cash' ? <Banknote size={20} /> : <Wallet size={20} />}
+      {data.accounts.length === 0 ? (
+        <div className="bg-white dark:bg-gray-900 rounded-2xl p-12 text-center text-gray-400 border border-gray-100 dark:border-gray-800">
+          <Wallet size={40} className="mx-auto mb-3 opacity-40 text-emerald-500" />
+          <p className="font-semibold text-gray-700 dark:text-gray-300">Belum ada dompet atau rekening.</p>
+          <p className="text-xs mt-1">Klik tombol "+ Tambah Dompet" di atas untuk mulai mencatat keuangan.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {data.accounts.map(acc => {
+            const currentBal = balances[acc.id] || 0;
+            return (
+              <div key={acc.id} className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm relative group">
+                <button
+                  onClick={() => {
+                    if (confirm(`Yakin ingin menghapus dompet "${acc.name}"? Semua transaksi yang berhubungan akan ikut terhapus.`)) {
+                      deleteAccount(acc.id);
+                    }
+                  }}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-red-500 p-1.5 rounded-lg transition"
+                  title="Hapus Dompet"
+                >
+                  <Trash2 size={16} />
+                </button>
+
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 rounded-xl">
+                    {acc.type === 'bank' ? <CreditCard size={20} /> : acc.type === 'cash' ? <Banknote size={20} /> : <Wallet size={20} />}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm">{acc.name}</h3>
+                    <p className="text-xs text-gray-400 capitalize">{acc.type}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-sm">{acc.name}</h3>
-                  <p className="text-xs text-gray-400 capitalize">{acc.type}</p>
-                </div>
+                <p className="text-xs text-gray-400">Saldo Saat Ini</p>
+                <p className="text-2xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">{formatIDR(currentBal)}</p>
+                <p className="text-[11px] text-gray-400 mt-2">Saldo Awal: {formatIDR(acc.initialBalance)}</p>
               </div>
-              <p className="text-xs text-gray-400">Saldo Saat Ini</p>
-              <p className="text-2xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">{formatIDR(currentBal)}</p>
-              <p className="text-[11px] text-gray-400 mt-2">Saldo Awal: {formatIDR(acc.initialBalance)}</p>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
