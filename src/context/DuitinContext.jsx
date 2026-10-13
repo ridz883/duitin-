@@ -2,32 +2,16 @@ import React, { createContext, useState, useEffect } from 'react';
 
 export const DuitinContext = createContext();
 
-const STORAGE_KEY = 'duitin_master_data_v1';
+// Menggunakan key v2 agar data dummy lama di browser langsung terhapus bersih
+const STORAGE_KEY = 'duitin_master_data_v2';
 
 const defaultData = {
-  accounts: [
-    { id: 'acc_1', name: 'Dompet Tunai', type: 'cash', initialBalance: 150000, color: '#10b981' },
-    { id: 'acc_2', name: 'Rekening Bank', type: 'bank', initialBalance: 2500000, color: '#3b82f6' },
-    { id: 'acc_3', name: 'E-Wallet', type: 'ewallet', initialBalance: 350000, color: '#f59e0b' }
-  ],
-  transactions: [
-    { id: 'tx_1', type: 'income', amount: 3500000, title: 'Gaji Bulanan', category: 'Gaji', accountId: 'acc_2', date: new Date().toISOString().split('T')[0], note: 'Gaji pokok' },
-    { id: 'tx_2', type: 'expense', amount: 35000, title: 'Makan Siang', category: 'Makanan & Minuman', accountId: 'acc_1', date: new Date().toISOString().split('T')[0], note: 'Nasi padang' }
-  ],
-  budgets: [
-    { id: 'bg_1', category: 'Makanan & Minuman', limit: 1200000, period: 'monthly' },
-    { id: 'bg_2', category: 'Transportasi', limit: 400000, period: 'monthly' }
-  ],
-  goals: [
-    { id: 'gl_1', name: 'Dana Darurat', targetAmount: 10000000, currentAmount: 2500000, targetDate: '2026-12-31' },
-    { id: 'gl_2', name: 'Beli Laptop', targetAmount: 8000000, currentAmount: 1800000, targetDate: '2026-11-30' }
-  ],
-  bills: [
-    { id: 'bl_1', name: 'Langganan WiFi & Listrik', amount: 450000, dueDate: '2026-11-05', isPaid: false, category: 'Tagihan' }
-  ],
-  debts: [
-    { id: 'db_1', person: 'Budi Santoso', type: 'receivable', amount: 150000, remaining: 150000, dueDate: '2026-10-30', note: 'Pinjam makan' }
-  ],
+  accounts: [],
+  transactions: [],
+  budgets: [],
+  goals: [],
+  bills: [],
+  debts: [],
   categories: {
     income: ['Gaji', 'Uang Saku', 'Freelance', 'Bonus', 'Investasi', 'Lainnya'],
     expense: ['Makanan & Minuman', 'Transportasi', 'Belanja', 'Tagihan', 'Pendidikan', 'Hiburan', 'Kesehatan', 'Lainnya']
@@ -101,37 +85,54 @@ export const DuitinProvider = ({ children }) => {
     return balances;
   };
 
+  // --- TRANSAKSI ---
   const addTransaction = (tx) => {
     const newTx = { ...tx, id: 'tx_' + Date.now() };
-    setData(prev => ({
-      ...prev,
-      transactions: [newTx, ...prev.transactions]
-    }));
-    showToast('Transaksi berhasil disimpan');
+    setData(prev => ({ ...prev, transactions: [newTx, ...prev.transactions] }));
+    showToast('Transaksi berhasil dicatat');
   };
 
   const deleteTransaction = (id) => {
-    setData(prev => ({
-      ...prev,
-      transactions: prev.transactions.filter(t => t.id !== id)
-    }));
+    setData(prev => ({ ...prev, transactions: prev.transactions.filter(t => t.id !== id) }));
     showToast('Transaksi dihapus');
   };
 
+  // --- DOMPET / AKUN ---
   const addAccount = (acc) => {
     const newAcc = { ...acc, id: 'acc_' + Date.now() };
     setData(prev => ({ ...prev, accounts: [...prev.accounts, newAcc] }));
     showToast('Dompet baru ditambahkan');
   };
 
+  const deleteAccount = (id) => {
+    setData(prev => ({
+      ...prev,
+      accounts: prev.accounts.filter(a => a.id !== id),
+      // Bersihkan transaksi yang terkait dengan akun ini
+      transactions: prev.transactions.filter(t => t.accountId !== id && t.fromAccountId !== id && t.toAccountId !== id)
+    }));
+    showToast('Dompet dan riwayatnya berhasil dihapus');
+  };
+
+  // --- ANGGARAN & TARGET TABUNGAN ---
   const addBudget = (budget) => {
     setData(prev => ({ ...prev, budgets: [...prev.budgets, { ...budget, id: 'bg_' + Date.now() }] }));
     showToast('Anggaran berhasil dibuat');
   };
 
+  const deleteBudget = (id) => {
+    setData(prev => ({ ...prev, budgets: prev.budgets.filter(b => b.id !== id) }));
+    showToast('Anggaran berhasil dihapus');
+  };
+
   const addGoal = (goal) => {
     setData(prev => ({ ...prev, goals: [...prev.goals, { ...goal, id: 'gl_' + Date.now() }] }));
     showToast('Target tabungan disimpan');
+  };
+
+  const deleteGoal = (id) => {
+    setData(prev => ({ ...prev, goals: prev.goals.filter(g => g.id !== id) }));
+    showToast('Target tabungan dihapus');
   };
 
   const updateGoalProgress = (id, amount) => {
@@ -142,9 +143,15 @@ export const DuitinProvider = ({ children }) => {
     showToast('Progres tabungan diperbarui');
   };
 
+  // --- TAGIHAN ---
   const addBill = (bill) => {
     setData(prev => ({ ...prev, bills: [...prev.bills, { ...bill, id: 'bl_' + Date.now() }] }));
     showToast('Tagihan ditambahkan');
+  };
+
+  const deleteBill = (id) => {
+    setData(prev => ({ ...prev, bills: prev.bills.filter(b => b.id !== id) }));
+    showToast('Tagihan berhasil dihapus');
   };
 
   const markBillPaid = (billId, accountId) => {
@@ -158,19 +165,25 @@ export const DuitinProvider = ({ children }) => {
       category: bill.category || 'Tagihan',
       accountId: accountId || data.accounts[0]?.id,
       date: new Date().toISOString().split('T')[0],
-      note: 'Pelunasan tagihan terjadwal'
+      note: 'Pelunasan tagihan'
     });
 
     setData(prev => ({
       ...prev,
       bills: prev.bills.map(b => b.id === billId ? { ...b, isPaid: true } : b)
     }));
-    showToast('Tagihan berhasil dilunasi');
+    showToast('Tagihan lunas');
   };
 
+  // --- UTANG & PIUTANG ---
   const addDebt = (debt) => {
     setData(prev => ({ ...prev, debts: [...prev.debts, { ...debt, id: 'db_' + Date.now() }] }));
     showToast('Catatan utang/piutang disimpan');
+  };
+
+  const deleteDebt = (id) => {
+    setData(prev => ({ ...prev, debts: prev.debts.filter(d => d.id !== id) }));
+    showToast('Catatan utang/piutang dihapus');
   };
 
   const payDebt = (debtId, payAmount, accountId) => {
@@ -235,19 +248,19 @@ export const DuitinProvider = ({ children }) => {
   const importBackup = (fileContent) => {
     try {
       const parsed = JSON.parse(fileContent);
-      if (!parsed.accounts || !parsed.transactions) throw new Error('Format tidak valid');
       setData(parsed);
       showToast('Data berhasil dipulihkan');
       return true;
     } catch {
-      showToast('File backup rusak atau tidak valid', 'error');
+      showToast('File backup rusak', 'error');
       return false;
     }
   };
 
   const resetAllData = () => {
     setData(defaultData);
-    showToast('Data dikembalikan ke pengaturan awal');
+    localStorage.removeItem(STORAGE_KEY);
+    showToast('Semua data berhasil dibersihkan');
   };
 
   return (
@@ -257,12 +270,17 @@ export const DuitinProvider = ({ children }) => {
       addTransaction,
       deleteTransaction,
       addAccount,
+      deleteAccount,
       addBudget,
+      deleteBudget,
       addGoal,
+      deleteGoal,
       updateGoalProgress,
       addBill,
+      deleteBill,
       markBillPaid,
       addDebt,
+      deleteDebt,
       payDebt,
       toggleDarkMode,
       exportBackup,
