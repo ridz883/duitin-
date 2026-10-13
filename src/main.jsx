@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
 
-// Bersihkan service worker lama agar tidak membuat layar nyangkut putih
+// Hapus cache service worker lama agar tidak pernah nyangkut layar putih
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then((registrations) => {
     for (let registration of registrations) {
