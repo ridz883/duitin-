@@ -31,7 +31,7 @@ export default function Profile() {
     name: data.profile?.name || '',
     bio: data.profile?.bio || '',
     avatar: data.profile?.avatar || '',
-    tier: data.profile?.tier || 'Premium Member'
+    tier: data.profile?.tier || 'Personal Account'
   });
 
   const [catType, setCatType] = useState('expense');
@@ -74,55 +74,57 @@ export default function Profile() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-black">Account & Settings</h1>
-        <p className="text-xs text-slate-500">Personalisasi profil akun Finora Anda dan kelola aplikasi PWA.</p>
+        <h1 className="text-2xl font-black">Akun & Pengaturan</h1>
+        <p className="text-xs text-slate-500">Edit profil, pasang aplikasi PWA, dan kelola penyimpanan lokal.</p>
       </div>
 
-      {/* Bagian PWA Install Card Khusus */}
-      <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-3xl p-6 shadow-xl shadow-emerald-900/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* Menu Install PWA */}
+      <div className="bg-gradient-to-br from-[#064e3b] to-[#0f766e] text-white rounded-3xl p-6 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white shrink-0">
+          <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
             <Smartphone size={24} />
           </div>
           <div>
-            <h3 className="text-sm font-bold">Pasang Aplikasi Duitin (PWA)</h3>
+            <h3 className="text-sm font-bold">Aplikasi Mobile Duitin (PWA)</h3>
             <p className="text-xs text-emerald-100">
               {isPwaInstalled 
-                ? 'Aplikasi sudah terpasang di perangkat Anda.' 
-                : 'Jalankan Duitin layaknya aplikasi native di Android tanpa membuka browser.'}
+                ? 'Aplikasi sudah terpasang di layar utama HP Anda.' 
+                : 'Pasang Duitin ke layar utama HP agar bisa dibuka penuh tanpa browser.'}
             </p>
           </div>
         </div>
         <button
           onClick={installPwa}
-          className="w-full sm:w-auto bg-white text-emerald-800 hover:bg-emerald-50 px-5 py-2.5 rounded-2xl text-xs font-bold transition shadow-md shrink-0"
+          className="w-full sm:w-auto bg-white text-emerald-900 hover:bg-emerald-50 px-5 py-2.5 rounded-2xl text-xs font-bold transition shadow-md shrink-0"
         >
-          {isPwaInstalled ? 'Buka Aplikasi' : 'Pasang Sekarang'}
+          {isPwaInstalled ? 'Aplikasi Aktif ✓' : 'Pasang Aplikasi'}
         </button>
       </div>
 
-      {/* Profil Pengguna */}
+      {/* Form Edit Profil */}
       <div className="bg-white dark:bg-[#0f172a] rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
         <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400 flex items-center space-x-2">
           <User size={16} className="text-emerald-500" />
-          <span>Informasi Profil</span>
+          <span>Edit Profil Pengguna</span>
         </h3>
 
         <form onSubmit={handleSaveProfile} className="space-y-4">
           <div className="flex items-center space-x-4">
             <div className="relative">
-              <img 
-                src={profileForm.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80"} 
-                alt="Avatar" 
-                className="w-16 h-16 rounded-3xl object-cover border-2 border-emerald-500" 
-              />
+              {profileForm.avatar ? (
+                <img src={profileForm.avatar} alt="Avatar" className="w-16 h-16 rounded-3xl object-cover border-2 border-emerald-500" />
+              ) : (
+                <div className="w-16 h-16 rounded-3xl bg-[#0f766e] text-white font-black text-2xl flex items-center justify-center">
+                  {(profileForm.name || 'P')[0].toUpperCase()}
+                </div>
+              )}
               <label className="absolute -bottom-1 -right-1 bg-slate-900 text-white p-1.5 rounded-xl cursor-pointer hover:bg-emerald-600 transition">
                 <Camera size={14} />
                 <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
               </label>
             </div>
             <div className="flex-1">
-              <label className="text-xs text-slate-400 font-bold">Nama Lengkap</label>
+              <label className="text-xs text-slate-400 font-bold">Nama Pengguna</label>
               <input
                 type="text"
                 required
@@ -135,7 +137,7 @@ export default function Profile() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-slate-400 font-bold">Motto Finansial</label>
+              <label className="text-xs text-slate-400 font-bold">Bio / Motto</label>
               <input
                 type="text"
                 value={profileForm.bio}
@@ -144,7 +146,7 @@ export default function Profile() {
               />
             </div>
             <div>
-              <label className="text-xs text-slate-400 font-bold">Status Member</label>
+              <label className="text-xs text-slate-400 font-bold">Label Status</label>
               <input
                 type="text"
                 value={profileForm.tier}
@@ -156,26 +158,28 @@ export default function Profile() {
 
           <button
             type="submit"
-            className="w-full py-3 bg-[#0f766e] text-white rounded-2xl text-xs font-bold transition flex items-center justify-center space-x-1 shadow-md shadow-teal-700/20"
+            className="w-full py-3 bg-[#0f766e] text-white rounded-2xl text-xs font-bold transition flex items-center justify-center space-x-1 shadow-md"
           >
             <Check size={16} />
-            <span>Simpan Perubahan Profil</span>
+            <span>Simpan Profil ke LocalStorage</span>
           </button>
         </form>
       </div>
 
       {/* Kategori Kustom */}
       <div className="bg-white dark:bg-[#0f172a] rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
-        <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400">Kategori Transaksi Kustom</h3>
+        <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400">Custom Kategori & Warna</h3>
         
         <div className="flex space-x-2 border-b border-slate-100 dark:border-slate-800 pb-2">
           <button
+            type="button"
             onClick={() => setCatType('expense')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold ${catType === 'expense' ? 'bg-rose-500 text-white' : 'text-slate-400'}`}
           >
             Pengeluaran
           </button>
           <button
+            type="button"
             onClick={() => setCatType('income')}
             className={`px-3 py-1.5 rounded-xl text-xs font-bold ${catType === 'income' ? 'bg-emerald-600 text-white' : 'text-slate-400'}`}
           >
@@ -187,7 +191,7 @@ export default function Profile() {
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="Nama Kategori..."
+              placeholder="Nama Kategori Baru..."
               value={newCatName}
               onChange={(e) => setNewCatName(e.target.value)}
               className="flex-1 p-2.5 bg-slate-50 dark:bg-slate-800 rounded-2xl text-xs outline-none"
@@ -202,7 +206,7 @@ export default function Profile() {
           </div>
 
           <div className="flex items-center space-x-2">
-            <span className="text-xs text-slate-400">Pilih Warna:</span>
+            <span className="text-xs text-slate-400">Warna:</span>
             {presetColors.map(color => (
               <button
                 type="button"
@@ -216,76 +220,74 @@ export default function Profile() {
         </form>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2">
-          {data.categories[catType]?.map(c => (
-            <div key={c.id || c.name} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40 text-xs">
-              <div className="flex items-center space-x-2">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c.color || '#10b981' }} />
-                <span className="font-semibold">{c.name}</span>
+          {(data.categories?.[catType] || []).map(c => {
+            const cName = typeof c === 'string' ? c : c.name;
+            const cColor = typeof c === 'string' ? '#10b981' : (c.color || '#10b981');
+            const cId = typeof c === 'string' ? c : c.id;
+            return (
+              <div key={cId} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 text-xs">
+                <div className="flex items-center space-x-2 truncate">
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cColor }} />
+                  <span className="font-semibold truncate">{cName}</span>
+                </div>
+                <button onClick={() => deleteCategory(catType, cId)} className="text-slate-400 hover:text-red-500">
+                  <Trash2 size={13} />
+                </button>
               </div>
-              <button onClick={() => deleteCategory(catType, c.id)} className="text-slate-400 hover:text-red-500">
-                <Trash2 size={13} />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* Cadangan Data */}
+      {/* Backup & Restore */}
       <div className="bg-white dark:bg-[#0f172a] rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-3">
-        <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400">Cadangan & Pemulihan (LocalStorage)</h3>
-        <p className="text-xs text-slate-400">
-          Seluruh data tersimpan secara aman di peramban perangkat Anda tanpa server perantara.
-        </p>
-
+        <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400">Cadangan Data (Backup & Restore)</h3>
         <div className="flex flex-col sm:flex-row gap-2 pt-1">
           <button
             onClick={exportBackup}
-            className="flex-1 flex items-center justify-center space-x-2 bg-[#0f766e] hover:bg-teal-800 text-white py-2.5 rounded-2xl text-xs font-bold transition shadow-sm"
+            className="flex-1 flex items-center justify-center space-x-2 bg-[#0f766e] text-white py-2.5 rounded-2xl text-xs font-bold"
           >
             <Download size={14} />
-            <span>Ekspor File JSON</span>
+            <span>Unduh Backup (.JSON)</span>
           </button>
-          <label className="flex-1 flex items-center justify-center space-x-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 py-2.5 rounded-2xl text-xs font-bold cursor-pointer transition">
+          <label className="flex-1 flex items-center justify-center space-x-2 bg-slate-100 dark:bg-slate-800 py-2.5 rounded-2xl text-xs font-bold cursor-pointer">
             <Upload size={14} />
-            <span>Impor File JSON</span>
+            <span>Pulihkan Data (.JSON)</span>
             <input type="file" accept=".json" onChange={handleFileRestore} className="hidden" />
           </label>
         </div>
       </div>
 
-      {/* Tentang Duitin */}
+      {/* Tentang Aplikasi */}
       <div className="bg-white dark:bg-[#0f172a] rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm space-y-3">
         <h3 className="font-bold text-sm flex items-center space-x-2">
           <Info size={16} className="text-emerald-500" />
-          <span>Tentang Duitin Finora</span>
+          <span>Tentang Aplikasi Duitin</span>
         </h3>
         <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-          <strong>Duitin</strong> dirancang untuk membantu Anda memantau keuangan harian, membatasi pengeluaran melalui sistem anggaran, mengelola target tabungan, dan menjadwalkan pelunasan tagihan.
+          <strong>Duitin</strong> adalah aplikasi web manajemen keuangan pribadi untuk mencatat pemasukan, pengeluaran, mengelola dompet, menyusun anggaran bulanan, menabung untuk target impian, serta memantau tagihan dan utang-piutang secara mandiri.
         </p>
         <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/30 rounded-2xl border border-emerald-500/20 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-start space-x-2">
           <ShieldCheck size={16} className="shrink-0 mt-0.5" />
           <span>
-            <strong>100% Client-Side:</strong> Tidak ada server atau database pihak ketiga. Akses tetap berfungsi penuh tanpa koneksi internet.
+            Seluruh data disimpan 100% secara lokal di browser perangkat Anda (LocalStorage) tanpa memerlukan login maupun server eksternal.
           </span>
         </div>
       </div>
 
-      {/* Reset */}
       <div className="text-center pt-2">
         <button
           onClick={() => {
-            if (confirm('PERINGATAN: Seluruh catatan transaksi dan dompet akan di-reset ke kondisi awal. Lanjutkan?')) {
-              resetAllData();
-            }
+            if (confirm('Reset seluruh data kembali ke 0?')) resetAllData();
           }}
           className="text-xs font-semibold text-rose-500 hover:underline flex items-center justify-center space-x-1 mx-auto"
         >
           <Trash size={12} />
-          <span>Bersihkan Semua Data Lokal</span>
+          <span>Hapus & Reset Semua Data</span>
         </button>
       </div>
 
-      {/* Signature ridzz */}
+      {/* Credit ridzz */}
       <footer className="text-center pt-6 pb-4">
         <span className="text-[11px] text-slate-300 dark:text-slate-700 tracking-widest uppercase font-semibold">
           crafted with passion by <span className="text-slate-400 dark:text-slate-500 font-bold">ridzz</span>
