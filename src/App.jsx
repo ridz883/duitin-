@@ -10,7 +10,7 @@ import BillsDebts from './pages/BillsDebts';
 import CalendarView from './pages/CalendarView';
 import Reports from './pages/Reports';
 import Assistant from './pages/Assistant';
-import Settings from './pages/Settings';
+import Profile from './pages/Profile';
 
 export default function App() {
   return (
@@ -26,7 +26,7 @@ export default function App() {
             <Route path="calendar" element={<CalendarView />} />
             <Route path="reports" element={<Reports />} />
             <Route path="assistant" element={<Assistant />} />
-            <Route path="settings" element={<Settings />} />
+            <Route path="profile" element={<Profile />} />
           </Route>
         </Routes>
       </BrowserRouter>
