@@ -1,9 +1,9 @@
 import React, { useContext, useState } from 'react';
 import { DuitinContext, formatIDR } from '../context/DuitinContext';
-import { CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, Trash2 } from 'lucide-react';
 
 export default function BillsDebts() {
-  const { data, markBillPaid, addBill, addDebt, payDebt } = useContext(DuitinContext);
+  const { data, markBillPaid, addBill, deleteBill, addDebt, deleteDebt, payDebt } = useContext(DuitinContext);
   const [tab, setTab] = useState('bills');
 
   const [billForm, setBillForm] = useState({ name: '', amount: '', dueDate: '' });
@@ -52,7 +52,7 @@ export default function BillsDebts() {
           >
             <input
               type="text"
-              placeholder="Nama Tagihan (WiFi, Listrik, dsb)"
+              placeholder="Nama Tagihan (WiFi, Listrik)"
               value={billForm.name}
               onChange={(e) => setBillForm({ ...billForm, name: e.target.value })}
               className="p-2.5 bg-gray-50 dark:bg-gray-800 rounded-xl text-sm outline-none"
@@ -77,32 +77,47 @@ export default function BillsDebts() {
             </button>
           </form>
 
-          <div className="space-y-3">
-            {data.bills.map(b => (
-              <div key={b.id} className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800 flex items-center justify-between shadow-sm">
-                <div>
-                  <h4 className="font-semibold text-sm">{b.name}</h4>
-                  <p className="text-xs text-gray-400">Jatuh Tempo: {b.dueDate}</p>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <span className="font-bold text-sm">{formatIDR(b.amount)}</span>
-                  {b.isPaid ? (
-                    <span className="flex items-center space-x-1 text-xs text-emerald-500 font-semibold bg-emerald-50 dark:bg-emerald-950 px-2.5 py-1 rounded-full">
-                      <CheckCircle2 size={14} />
-                      <span>Lunas</span>
-                    </span>
-                  ) : (
+          {data.bills.length === 0 ? (
+            <p className="text-center text-gray-400 py-10 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 text-sm">
+              Belum ada catatan tagihan.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {data.bills.map(b => (
+                <div key={b.id} className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800 flex items-center justify-between shadow-sm">
+                  <div>
+                    <h4 className="font-semibold text-sm">{b.name}</h4>
+                    <p className="text-xs text-gray-400">Jatuh Tempo: {b.dueDate}</p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <span className="font-bold text-sm">{formatIDR(b.amount)}</span>
+                    {b.isPaid ? (
+                      <span className="flex items-center space-x-1 text-xs text-emerald-500 font-semibold bg-emerald-50 dark:bg-emerald-950 px-2.5 py-1 rounded-full">
+                        <CheckCircle2 size={14} />
+                        <span>Lunas</span>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => markBillPaid(b.id, data.accounts[0]?.id)}
+                        className="text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg"
+                      >
+                        Bayar Sekarang
+                      </button>
+                    )}
                     <button
-                      onClick={() => markBillPaid(b.id, data.accounts[0]?.id)}
-                      className="text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg"
+                      onClick={() => {
+                        if (confirm(`Hapus tagihan "${b.name}"?`)) deleteBill(b.id);
+                      }}
+                      className="text-gray-400 hover:text-red-500 p-1"
+                      title="Hapus Tagihan"
                     >
-                      Bayar Sekarang
+                      <Trash2 size={16} />
                     </button>
-                  )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
@@ -151,36 +166,51 @@ export default function BillsDebts() {
             </button>
           </form>
 
-          <div className="space-y-3">
-            {data.debts.map(d => (
-              <div key={d.id} className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800 flex items-center justify-between shadow-sm">
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h4 className="font-semibold text-sm">{d.person}</h4>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${d.type === 'debt' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
-                      {d.type === 'debt' ? 'Utang Saya' : 'Piutang Saya'}
-                    </span>
+          {data.debts.length === 0 ? (
+            <p className="text-center text-gray-400 py-10 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 text-sm">
+              Belum ada catatan utang atau piutang.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {data.debts.map(d => (
+                <div key={d.id} className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800 flex items-center justify-between shadow-sm">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h4 className="font-semibold text-sm">{d.person}</h4>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${d.type === 'debt' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                        {d.type === 'debt' ? 'Utang Saya' : 'Piutang Saya'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5">Sisa: {formatIDR(d.remaining)} dari {formatIDR(d.amount)}</p>
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5">Sisa: {formatIDR(d.remaining)} dari {formatIDR(d.amount)}</p>
-                </div>
-                <div>
-                  {d.remaining === 0 ? (
-                    <span className="text-xs text-emerald-500 font-bold">Lunas</span>
-                  ) : (
+                  <div className="flex items-center space-x-3">
+                    {d.remaining === 0 ? (
+                      <span className="text-xs text-emerald-500 font-bold">Lunas</span>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          const amt = prompt('Nominal cicilan/pelunasan (Rp):', d.remaining);
+                          if (amt && Number(amt) > 0) payDebt(d.id, amt, data.accounts[0]?.id);
+                        }}
+                        className="text-xs font-semibold bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 px-3 py-1.5 rounded-lg"
+                      >
+                        Catat Pelunasan
+                      </button>
+                    )}
                     <button
                       onClick={() => {
-                        const amt = prompt('Nominal cicilan/pelunasan (Rp):', d.remaining);
-                        if (amt && Number(amt) > 0) payDebt(d.id, amt, data.accounts[0]?.id);
+                        if (confirm(`Hapus catatan atas nama "${d.person}"?`)) deleteDebt(d.id);
                       }}
-                      className="text-xs font-semibold bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 px-3 py-1.5 rounded-lg"
+                      className="text-gray-400 hover:text-red-500 p-1"
+                      title="Hapus Catatan"
                     >
-                      Catat Pelunasan
+                      <Trash2 size={16} />
                     </button>
-                  )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
